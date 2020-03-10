@@ -1,0 +1,27 @@
+syntax = "proto3";
+package proto;
+
+enum Status {
+    RUNNING = 0;
+    STOPPED = 1;
+    UNHEALTHY = 2;
+  }
+
+message ClusterData {
+    repeated LoadBalancer loadBalancer = 1;
+}
+
+message LoadBalancer {
+    string name = 1;
+    repeated TargetGroup targetGroup = 2;
+}
+
+message TargetGroup {
+    string name = 1;
+    repeated Instance instance = 2;
+}
+
+message Instance {
+    string name = 1;
+    Status status = 2;
+}

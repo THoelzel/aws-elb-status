@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+
+<body>
+    <h1>{{.Name}}</h1>
+
+    <div class="row" id="content">
+        <!-- <div class="col-sm-6">
+        <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+        </div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Special title treatment</h5>
+            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+        </div>
+        </div>
+    </div> -->
+    </div>
+
+    <!-- <div id="content"></div> -->
+    <script>
+        const RUNNING = 0;
+        const STOPPED = 1;
+        const UNHEALTHY = 2;
+        let clusters = {{.Clusters }};
+        updateStatus();
+
+        function updateStatus() {
+
+            let text = "";
+            // for (let [name, cluster] of clusters) {
+            for (let i = 0; i < clusters.length; i++) {
+
+                text += "<div class='col-sm-6'>"
+                if (clusters[i].Status == RUNNING) {
+                    text += "<div class='card border-success mt-4'>"
+                    text += "<h5 class='card-header'>" + clusters[i].Name + "</h5>"
+                    text += "<div class='card-body'>"
+                }
+                else {
+                    text += "<div class='card border-danger mt-4'>"
+                    text += "<h5 class='card-header text-danger'>" + clusters[i].Name + "</h5>"
+                    text += "<div class='card-body text-danger'>"
+                }
+
+                text += '<p class="card-text">'
+                text += '<table class="table table-sm"><tbody>'
+                for (let j = 0; j < clusters[i].ServerCategories.length; j++) {
+
+                    // text += '<p class="card-text">' + clusters[i].ServerCategories[j].Name;
+                    text += '<tr>'
+                    text += '<td>' + clusters[i].ServerCategories[j].Name + '</td>';
+
+
+
+                    for (let k = 0; k < clusters[i].ServerCategories[j].Servers.length; k++) {
+                        text += '<td>' + clusters[i].ServerCategories[j].Servers[k].Name + '</td>';
+                    }
+                    text += "</tr>"
+                }
+                text += "</tbody></table></p></div></div></div>"
+            }
+            document.getElementById("content").innerHTML = text
+        }
+
+        function unsub() {
+            webSocket.close()
+        }
+
+        document.addEventListener('unload', unsub);
+        document.addEventListener('load', updateStatus);
+
+        let webSocket = new WebSocket("ws://localhost:8080/v1/ws");
+
+        webSocket.onmessage = function (event) {
+            console.log(event);
+            clusters = JSON.parse(event.data);
+            updateStatus();
+        };
+
+        let interval = setInterval(function () {
+            if (webSocket.readyState !== 0 && webSocket.readyState !== 1) {
+                console.log("connection lost, readyState=" + webSocket.readyState);
+                clearInterval(interval)
+            }
+        }, 10000);
+
+    </script>
+    <style>
+        body {
+            padding: 20px;
+        }
+    </style>
+</body>
+
+</html>
