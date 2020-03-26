@@ -147,7 +147,7 @@ func (s *ServerCategory) instanceHealth() {
 }
 
 func nameAllInstances() {
-
+	// TODO
 }
 
 func convertState(s string) int {
