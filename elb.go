@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/elbv2"
+	"go.uber.org/zap"
 )
 
 type status interface {
@@ -79,6 +80,9 @@ func findClusters() []Cluster {
 		clusters = append(clusters, c)
 	}
 
+	logger.Debug("located load balancers",
+		zap.Int("count", len(clusters)))
+
 	return findAllTargetGroups(clusters)
 }
 
@@ -100,15 +104,20 @@ func findAllTargetGroups(clusters []Cluster) []Cluster {
 		labeledClusters[c.LoadBalancerArn] = c
 	}
 
-	// only supports single LB pointing to TG
-	for _, t := range out.TargetGroups {
-		if v, ok := labeledClusters[*t.LoadBalancerArns[0]]; ok {
-			s := ServerCategory{
-				Name:           *t.TargetGroupName,
-				TargetGroupArn: *t.TargetGroupArn,
+	if out != nil {
+		logger.Debug("located target groups",
+			zap.Int("count", len(out.TargetGroups)))
+
+		// only supports single LB pointing to TG
+		for _, t := range out.TargetGroups {
+			if v, ok := labeledClusters[*t.LoadBalancerArns[0]]; ok {
+				s := ServerCategory{
+					Name:           *t.TargetGroupName,
+					TargetGroupArn: *t.TargetGroupArn,
+				}
+				s.instanceHealth()
+				v.ServerCategories = append(v.ServerCategories, s)
 			}
-			s.instanceHealth()
-			v.ServerCategories = append(v.ServerCategories, s)
 		}
 	}
 
