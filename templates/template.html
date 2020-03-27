@@ -22,16 +22,15 @@
         function updateStatus() {
 
             let text = "";
-            // for (let [name, cluster] of clusters) {
+
             for (let i = 0; i < clusters.length; i++) {
 
                 text += "<div class='col-sm-6'>"
-                if (clusters[i].Status == RUNNING) {
+                if (clusters[i].Status === RUNNING) {
                     text += "<div class='card border-success mt-4'>"
                     text += "<h5 class='card-header'>" + clusters[i].Name + "</h5>"
                     text += "<div class='card-body'>"
-                }
-                else {
+                } else {
                     text += "<div class='card border-danger mt-4'>"
                     text += "<h5 class='card-header text-danger'>" + clusters[i].Name + "</h5>"
                     text += "<div class='card-body text-danger'>"

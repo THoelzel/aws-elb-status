@@ -2,11 +2,16 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"go.uber.org/zap"
+	"strings"
 )
 
-var sess *session.Session
+var (
+	sess *session.Session
+	instanceNames map[string]string
+)
 
 type status interface {
 	refresh()
@@ -46,6 +51,8 @@ type Server struct {
 func NewStatus(name string) Status {
 
 	sess = session.Must(session.NewSession())
+	instanceNames = nameAllInstances()
+
 	return Status{
 		Name:     name,
 		Clusters: findClusters(),
@@ -65,8 +72,6 @@ func findClusters() []Cluster {
 	var clusters []Cluster
 
 	in := elbv2.DescribeLoadBalancersInput{}
-
-	// TODO
 	svc := elbv2.New(sess)
 
 	out, err := svc.DescribeLoadBalancers(&in)
@@ -76,7 +81,6 @@ func findClusters() []Cluster {
 			zap.Error(err))
 		return clusters
 	}
-
 
 	for _, l := range out.LoadBalancers {
 
@@ -102,13 +106,15 @@ func findAllTargetGroups(clusters []Cluster) []Cluster {
 	out, err := svc.DescribeTargetGroups(&in)
 
 	if err != nil {
-
+		logger.Error("unable to fetch target groups",
+			zap.Error(err))
 	}
 
 	labeledClusters := make(map[string]Cluster)
 
 	for _, c := range clusters {
 		labeledClusters[c.LoadBalancerArn] = c
+		// TODO
 	}
 
 	if out != nil {
@@ -151,22 +157,46 @@ func (s *ServerCategory) instanceHealth() {
 	out, err := svc.DescribeTargetHealth(&in)
 
 	if err != nil {
+		logger.Error("unable to fetch instances",
+			zap.String("target_group_name", s.Name),
+			zap.String("target_group_arn", s.TargetGroupArn),
+			zap.Error(err))
+	} else {
+		var servers []Server
 
-	}
-
-	var servers []Server
-
-	for _, t := range out.TargetHealthDescriptions {
-		s := Server{
-			Name:   *t.Target.Id,
-			Status: convertState(*t.TargetHealth.State),
+		for _, t := range out.TargetHealthDescriptions {
+			s := Server{
+				Name:   *t.Target.Id,
+				Status: convertState(*t.TargetHealth.State),
+			}
+			servers = append(servers, s)
 		}
-		servers = append(servers, s)
+		s.Servers = servers
 	}
 }
 
-func nameAllInstances() {
-	// TODO
+func nameAllInstances() map[string]string {
+
+	names := make(map[string]string)
+	i := ec2.DescribeInstancesInput{}
+	svc := ec2.New(sess)
+	out, err := svc.DescribeInstances(&i)
+
+	if err != nil {
+		logger.Error("unable to fetch instance names",
+			zap.Error(err))
+	} else {
+		for _, i := range out.Reservations[0].Instances {
+			for _, t := range i.Tags {
+				if strings.EqualFold(*t.Key, "name") {
+					names[*i.InstanceId] = *t.Value
+					break
+				}
+			}
+		}
+	}
+
+	return names
 }
 
 func convertState(s string) int {
