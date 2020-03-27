@@ -11,7 +11,7 @@ func main() {
 
 	b = NewBroker()
 	go b.Start()
-	initial()
+	//initial()
 
 	config := NewConfig()
 

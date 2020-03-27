@@ -1,9 +1,12 @@
 package main
 
 import (
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"go.uber.org/zap"
 )
+
+var sess *session.Session
 
 type status interface {
 	refresh()
@@ -41,6 +44,8 @@ type Server struct {
 }
 
 func NewStatus(name string) Status {
+
+	sess = session.Must(session.NewSession())
 	return Status{
 		Name:     name,
 		Clusters: findClusters(),
@@ -57,19 +62,21 @@ func (m *MockStatus) refresh() {
 
 func findClusters() []Cluster {
 
+	var clusters []Cluster
+
 	in := elbv2.DescribeLoadBalancersInput{}
 
 	// TODO
-	svc := elbv2.New(nil)
+	svc := elbv2.New(sess)
 
 	out, err := svc.DescribeLoadBalancers(&in)
 
 	if err != nil {
-
-		return nil
+		logger.Error("unable to fetch load balancers",
+			zap.Error(err))
+		return clusters
 	}
 
-	var clusters []Cluster
 
 	for _, l := range out.LoadBalancers {
 
@@ -90,7 +97,7 @@ func findAllTargetGroups(clusters []Cluster) []Cluster {
 	in := elbv2.DescribeTargetGroupsInput{}
 
 	// TODO
-	svc := elbv2.New(nil)
+	svc := elbv2.New(sess)
 
 	out, err := svc.DescribeTargetGroups(&in)
 
@@ -110,13 +117,16 @@ func findAllTargetGroups(clusters []Cluster) []Cluster {
 
 		// only supports single LB pointing to TG
 		for _, t := range out.TargetGroups {
-			if v, ok := labeledClusters[*t.LoadBalancerArns[0]]; ok {
-				s := ServerCategory{
-					Name:           *t.TargetGroupName,
-					TargetGroupArn: *t.TargetGroupArn,
+			if len(t.LoadBalancerArns) > 0 {
+				if v, ok := labeledClusters[*t.LoadBalancerArns[0]]; ok {
+					s := ServerCategory{
+						Name:           *t.TargetGroupName,
+						TargetGroupArn: *t.TargetGroupArn,
+					}
+					s.instanceHealth()
+					v.ServerCategories = append(v.ServerCategories, s)
+					labeledClusters[*t.LoadBalancerArns[0]] = v
 				}
-				s.instanceHealth()
-				v.ServerCategories = append(v.ServerCategories, s)
 			}
 		}
 	}
@@ -137,7 +147,7 @@ func (s *ServerCategory) instanceHealth() {
 		TargetGroupArn: &s.TargetGroupArn,
 	}
 
-	svc := elbv2.New(nil)
+	svc := elbv2.New(sess)
 	out, err := svc.DescribeTargetHealth(&in)
 
 	if err != nil {

@@ -10,25 +10,8 @@
     <h1>{{.Name}}</h1>
 
     <div class="row" id="content">
-        <!-- <div class="col-sm-6">
-        <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Special title treatment</h5>
-            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-        </div>
-        </div>
-    </div>
-    <div class="col-sm-6">
-        <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Special title treatment</h5>
-            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-        </div>
-        </div>
-    </div> -->
     </div>
 
-    <!-- <div id="content"></div> -->
     <script>
         const RUNNING = 0;
         const STOPPED = 1;
@@ -56,18 +39,20 @@
 
                 text += '<p class="card-text">'
                 text += '<table class="table table-sm"><tbody>'
-                for (let j = 0; j < clusters[i].ServerCategories.length; j++) {
+                if (clusters[i].ServerCategories != null) {
+                    for (let j = 0; j < clusters[i].ServerCategories.length; j++) {
 
-                    // text += '<p class="card-text">' + clusters[i].ServerCategories[j].Name;
-                    text += '<tr>'
-                    text += '<td>' + clusters[i].ServerCategories[j].Name + '</td>';
+                        // text += '<p class="card-text">' + clusters[i].ServerCategories[j].Name;
+                        text += '<tr>'
+                        text += '<td>' + clusters[i].ServerCategories[j].Name + '</td>';
 
-
-
-                    for (let k = 0; k < clusters[i].ServerCategories[j].Servers.length; k++) {
-                        text += '<td>' + clusters[i].ServerCategories[j].Servers[k].Name + '</td>';
+                        if (clusters[i].ServerCategories[j].Servers != null) {
+                            for (let k = 0; k < clusters[i].ServerCategories[j].Servers.length; k++) {
+                                text += '<td>' + clusters[i].ServerCategories[j].Servers[k].Name + '</td>';
+                            }
+                        }
+                        text += "</tr>"
                     }
-                    text += "</tr>"
                 }
                 text += "</tbody></table></p></div></div></div>"
             }

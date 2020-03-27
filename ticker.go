@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"go.uber.org/zap"
+	"time"
+)
 
 func startTicker() {
 	for range time.NewTicker(time.Minute / 3).C {
@@ -10,5 +13,8 @@ func startTicker() {
 
 func initial() {
 	//s := NewMockStatus("mock")
+	s := NewStatus("mock")
+	logger.Debug("tmp",
+		zap.Any("val", s))
 	go startTicker()
 }

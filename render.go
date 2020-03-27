@@ -8,7 +8,8 @@ import (
 )
 
 func returnStatus(w http.ResponseWriter) {
-	s := NewMockStatus("mock status")
+	//s := NewMockStatus("mock status")
+	s := NewStatus("status")
 	t, err := template.ParseFiles("templates/template.html")
 	if err != nil {
 		logger.Debug("Unable to parse template",
